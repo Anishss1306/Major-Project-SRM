@@ -1,0 +1,28 @@
+# --- Python & Runtime ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.ipynb_checkpoints
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+
+# --- IDE Settings (PyCharm/VSCode) ---
+.idea/
+.vscode/
+*.swp
+
+# --- Project Data (CRITICAL) ---
+# Ignore all data to prevent committing GBs of XML/TSV files
+data/
+# Optional: If you want to track the folder structure but not files,
+# you can use specific rules, but ignoring 'data/' is safest for now.
+
+# --- Secrets & Config ---
+.env
+
+
+Major Project.docx
