@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.log
 *.ipynb_checkpoints
+*.egg-info/
 
 # --- Virtual Environments ---
 venv/
