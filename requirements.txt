@@ -11,7 +11,7 @@ pydantic          # For Input Validation [cite: 7]
 python-dotenv     # For managing API keys
 
 # --- RAG & AI ---
-chromadb          # The Vector Database [cite: 13]
+pinecone          # Vector Database (hosted)
 langchain
 langchain-community
 sentence-transformers  # For local embeddings and Cross-Encoders

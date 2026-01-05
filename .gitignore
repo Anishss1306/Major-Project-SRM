@@ -24,6 +24,7 @@ data/
 
 # --- Secrets & Config ---
 .env
+config.env
 
 
 Major Project.docx

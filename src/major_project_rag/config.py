@@ -24,8 +24,6 @@ class Paths:
     drugbank_vocab_parquet: Path = processed / "drugbank_vocab.parquet"
     fda_parquet: Path = processed / "fda_drugs.parquet"
 
-    chroma_db_dir: Path = data / "chroma_db"
-
 
 PATHS = Paths()
 

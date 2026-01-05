@@ -5,7 +5,7 @@ This repository contains the **data ingestion + indexing** foundation for a Retr
 ## What it does (today)
 
 - **Extract PubMed** article titles/abstracts from XML into a Parquet file.
-- **Chunk, embed & index** PubMed abstracts into a persistent **ChromaDB** vector store.
+- **Chunk, embed & index** PubMed abstracts into a hosted **Pinecone** vector index.
 - **Parse DrugBank vocabulary** into a normalization table (canonical name + synonyms).
 - **Parse Drugs@FDA** tables into a Parquet file (not yet used by retrieval).
 - **Validate query intent** (blocks dosage/diagnosis) and **normalize drug names** from user queries.
@@ -18,10 +18,10 @@ All runnable logic is packaged under `src/major_project_rag/`:
 
 - `src/major_project_rag/__main__.py`: enables `python -m major_project_rag ...`
 - `src/major_project_rag/cli.py`: CLI entrypoint + subcommands
-- `src/major_project_rag/config.py`: shared filesystem paths (raw/processed/chroma)
+- `src/major_project_rag/config.py`: shared filesystem paths (raw/processed)
 - `src/major_project_rag/ingestion/`: ingestion + indexing steps
   - `pubmed_extract.py`: PubMed XML -> Parquet
-  - `chroma_index.py`: embed + upsert Parquet into Chroma
+  - `pinecone_index.py`: chunk + embed + upsert Parquet into Pinecone
   - `drugbank_vocab.py`: DrugBank vocabulary CSV -> Parquet
   - `fda_parse.py`: Drugs@FDA tab files -> Parquet
 - `src/major_project_rag/rag/`: query-side helpers (no LLM generation yet)
@@ -44,11 +44,12 @@ python -m major_project_rag --help
 # 1) Extract PubMed XML -> Parquet
 python -m major_project_rag pubmed-extract
 
-# 2) Embed + upsert PubMed abstracts into ChromaDB
-python -m major_project_rag chroma-index --rebuild
+# 2) Chunk + embed + upsert PubMed abstracts into Pinecone
+# Required: set PINECONE_API_KEY in your environment
+python -m major_project_rag pinecone-index --host "YOUR_PINECONE_HOST"
 
 # (Optional) Tune chunking (characters)
-python -m major_project_rag chroma-index --rebuild --chunk-size 800 --chunk-overlap 100
+python -m major_project_rag pinecone-index --host "YOUR_PINECONE_HOST" --chunk-size 800 --chunk-overlap 100
 
 # 3) Parse DrugBank vocabulary CSV -> Parquet
 python -m major_project_rag drugbank-vocab
@@ -78,7 +79,6 @@ python -m major_project_rag print-config
   - Centralizes filesystem paths used everywhere:
     - raw data under `data/raw/...`
     - processed outputs under `data/processed/...`
-    - Chroma persistence under `data/chroma_db/`
 
 ### Ingestion + indexing (the “build” side)
 
@@ -88,12 +88,12 @@ python -m major_project_rag print-config
   - Writes `data/processed/pubmed_extracted.parquet` with columns:
     - `pmid`, `title`, `abstract`, `source_file`
 
-- **`src/major_project_rag/ingestion/chroma_index.py`**
+- **`src/major_project_rag/ingestion/pinecone_index.py`**
   - Loads `data/processed/pubmed_extracted.parquet`
   - Filters short abstracts
   - **Chunks** abstracts (default ~800 chars, 100 overlap)
-  - **Embeds** chunks using SentenceTransformers (default `all-MiniLM-L6-v2`)
-  - **Upserts** into a persistent Chroma collection (default `pubmed_evidence`) in `data/chroma_db/`
+  - **Embeds** chunks using Pinecone hosted embeddings (default `llama-text-embed-v2`, 1024 dims)
+  - **Upserts** into your Pinecone index via its host URL (namespace `default`)
   - This is where your “embedding and upserting” happens.
 
 - **`src/major_project_rag/ingestion/chunking.py`**
@@ -134,6 +134,20 @@ Outputs:
 - PubMed parquet: `data/processed/pubmed_extracted.parquet`
 - DrugBank vocab parquet: `data/processed/drugbank_vocab.parquet`
 - FDA parquet: `data/processed/fda_drugs.parquet`
-- Chroma DB: `data/chroma_db/` (collection `pubmed_evidence`)
+- Pinecone: remote hosted index (default name `pubmed-evidence`)
+
+## Pinecone setup
+
+- Create a Pinecone account and project.
+- Set your API key (recommended: use `config.env`):
+  - Copy/edit `config.env` (this repo auto-loads it via `python-dotenv`)
+  - Fill `PINECONE_API_KEY=...`
+  - Keep it secret (it is git-ignored)
+
+You can customize where vectors land:
+- `--namespace` (default `default`)
+
+For on-demand indexes created in the Pinecone console, you should use the **index host**:
+- Set `PINECONE_HOST=...` in `config.env`, or pass `--host ...` to `pinecone-index`
 
 
